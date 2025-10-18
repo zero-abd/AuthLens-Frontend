@@ -265,6 +265,124 @@ body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
+/* Stream Mode Toggle */
+.stream-mode-toggle {
+  margin-bottom: 2rem;
+}
+
+.toggle-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: #87ceeb;
+}
+
+.toggle-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+  justify-content: center;
+}
+
+.toggle-btn:hover {
+  border-color: #87ceeb;
+  background: rgba(135, 206, 235, 0.1);
+}
+
+.toggle-btn.active {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+}
+
+.toggle-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* Connection Status */
+.connection-status {
+  margin-top: 1rem;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.status-indicator.connected {
+  background: rgba(76, 175, 80, 0.2);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+  color: #4CAF50;
+}
+
+.status-indicator.disconnected {
+  background: rgba(244, 67, 54, 0.2);
+  border: 1px solid rgba(244, 67, 54, 0.5);
+  color: #f44336;
+}
+
+.status-indicator.streaming {
+  background: rgba(156, 39, 176, 0.2);
+  border: 1px solid rgba(156, 39, 176, 0.5);
+  color: #9c27b0;
+  animation: streaming-pulse 2s ease-in-out infinite;
+}
+
+.status-indicator.idle {
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.5);
+  color: #ffc107;
+}
+
+.status-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* Live Stream Info */
+.live-stream-info {
+  text-align: center;
+}
+
+.stream-status {
+  margin-bottom: 1rem;
+}
+
+.stream-instructions {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #87ceeb;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.stream-instructions strong {
+  color: #ffd700;
+  word-break: break-all;
+}
+
 .ngrok-input {
   margin-bottom: 2rem;
 }

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Camera, Play, Square, Star, Upload, Zap } from 'lucide-react';
+import { Camera, Play, Square, Star, Upload, Wifi, WifiOff, Zap } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
@@ -13,16 +13,21 @@ interface FrameData {
 const App: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isLiveStreaming, setIsLiveStreaming] = useState(false);
   const [frames, setFrames] = useState<FrameData[]>([]);
   const [ngrokUrl, setNgrokUrl] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [wsConnected, setWsConnected] = useState(false);
+  const [streamMode, setStreamMode] = useState<'frames' | 'live'>('live');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const lastFrameTimeRef = useRef<number>(0);
 
   // Celestial background animation
   useEffect(() => {
@@ -47,6 +52,66 @@ const App: React.FC = () => {
 
     createStars();
   }, []);
+
+  // WebSocket connection for live streaming
+  useEffect(() => {
+    if (streamMode === 'live') {
+      connectWebSocket();
+    }
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [streamMode]);
+
+  const connectWebSocket = () => {
+    try {
+      // Connect to local streaming server on port 3001
+      const wsUrl = 'ws://localhost:3001';
+      
+      wsRef.current = new WebSocket(wsUrl);
+      
+      wsRef.current.onopen = () => {
+        setWsConnected(true);
+        setError('');
+        console.log('🌟 Connected to live streaming server');
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          if (message.type === 'connection') {
+            console.log('📡', message.message);
+          }
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error);
+        }
+      };
+
+      wsRef.current.onclose = () => {
+        setWsConnected(false);
+        console.log('👋 Disconnected from streaming server');
+        
+        // Attempt to reconnect after 3 seconds
+        setTimeout(() => {
+          if (streamMode === 'live') {
+            connectWebSocket();
+          }
+        }, 3000);
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        setError('Failed to connect to streaming server');
+        setWsConnected(false);
+      };
+    } catch (error) {
+      console.error('❌ Error creating WebSocket:', error);
+      setError('Invalid ngrok URL');
+    }
+  };
 
   const startCamera = async () => {
     try {
@@ -92,10 +157,26 @@ const App: React.FC = () => {
     mediaRecorder.start();
     setIsRecording(true);
 
-    // Capture frames every 100ms
-    frameIntervalRef.current = setInterval(() => {
-      captureFrame();
-    }, 100);
+    if (streamMode === 'live') {
+      setIsLiveStreaming(true);
+      // Notify WebSocket that streaming started
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: 'stream-start',
+          timestamp: Date.now()
+        }));
+      }
+      
+      // Stream frames every 16ms for 60 FPS live streaming
+      frameIntervalRef.current = setInterval(() => {
+        streamFrame();
+      }, 16);
+    } else {
+      // Capture frames every 100ms for frame collection
+      frameIntervalRef.current = setInterval(() => {
+        captureFrame();
+      }, 100);
+    }
   };
 
   const stopRecording = () => {
@@ -104,6 +185,15 @@ const App: React.FC = () => {
       mediaRecorderRef.current = null;
     }
     setIsRecording(false);
+    setIsLiveStreaming(false);
+    
+    // Notify WebSocket that streaming stopped
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'stream-stop',
+        timestamp: Date.now()
+      }));
+    }
     
     if (frameIntervalRef.current) {
       clearInterval(frameIntervalRef.current);
@@ -132,6 +222,42 @@ const App: React.FC = () => {
     };
 
     setFrames(prev => [...prev, frame]);
+  };
+
+  const streamFrame = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const now = Date.now();
+    const timeSinceLastFrame = now - lastFrameTimeRef.current;
+    
+    // Skip frame if it's been less than 16ms (60 FPS max)
+    if (timeSinceLastFrame < 16) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+
+    const imageData = canvas.toDataURL('image/jpeg', 0.6); // Lower quality for faster transfer
+    const base64Data = imageData.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+
+    // Send frame via WebSocket
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      const message = {
+        type: 'video-chunk',
+        chunk: base64Data,
+        timestamp: now,
+        frameId: now.toString()
+      };
+      
+      wsRef.current.send(JSON.stringify(message));
+      lastFrameTimeRef.current = now;
+    }
   };
 
   const sendFramesToEndpoint = async () => {
@@ -257,6 +383,26 @@ const App: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
+            <div className="stream-mode-toggle">
+              <label className="toggle-label">Stream Mode:</label>
+              <div className="toggle-buttons">
+                <button
+                  className={`toggle-btn ${streamMode === 'live' ? 'active' : ''}`}
+                  onClick={() => setStreamMode('live')}
+                >
+                  <Wifi className="toggle-icon" />
+                  Live Stream
+                </button>
+                <button
+                  className={`toggle-btn ${streamMode === 'frames' ? 'active' : ''}`}
+                  onClick={() => setStreamMode('frames')}
+                >
+                  <Upload className="toggle-icon" />
+                  Send Frames
+                </button>
+              </div>
+            </div>
+
             <div className="ngrok-input">
               <label htmlFor="ngrok-url">
                 <Zap className="input-icon" />
@@ -270,6 +416,21 @@ const App: React.FC = () => {
                 onChange={(e) => setNgrokUrl(e.target.value)}
                 className="url-input"
               />
+              {streamMode === 'live' && (
+                <div className="connection-status">
+                  {wsConnected ? (
+                    <div className="status-indicator connected">
+                      <Wifi className="status-icon" />
+                      Connected to Live Stream
+                    </div>
+                  ) : (
+                    <div className="status-indicator disconnected">
+                      <WifiOff className="status-icon" />
+                      Not Connected
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="frame-info">
@@ -280,26 +441,50 @@ const App: React.FC = () => {
             </div>
 
             <div className="action-buttons">
-              <motion.button
-                className="action-btn send"
-                onClick={sendFramesToEndpoint}
-                disabled={frames.length === 0 || !ngrokUrl.trim()}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Upload />
-                Send Frames to Endpoint
-              </motion.button>
+              {streamMode === 'frames' ? (
+                <>
+                  <motion.button
+                    className="action-btn send"
+                    onClick={sendFramesToEndpoint}
+                    disabled={frames.length === 0 || !ngrokUrl.trim()}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Upload />
+                    Send Frames to Endpoint
+                  </motion.button>
 
-              <motion.button
-                className="action-btn clear"
-                onClick={clearFrames}
-                disabled={frames.length === 0}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Clear Frames
-              </motion.button>
+                  <motion.button
+                    className="action-btn clear"
+                    onClick={clearFrames}
+                    disabled={frames.length === 0}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Clear Frames
+                  </motion.button>
+                </>
+              ) : (
+                <div className="live-stream-info">
+                  <div className="stream-status">
+                    {isLiveStreaming ? (
+                      <div className="status-indicator streaming">
+                        <Wifi className="status-icon" />
+                        Live Streaming Active
+                      </div>
+                    ) : (
+                      <div className="status-indicator idle">
+                        <WifiOff className="status-icon" />
+                        Ready to Stream
+                      </div>
+                    )}
+                  </div>
+                  <p className="stream-instructions">
+                    🌟 Other computers can watch your live stream at:<br/>
+                    <strong>{ngrokUrl}/receiver</strong>
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
 
