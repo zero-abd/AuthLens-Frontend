@@ -6,20 +6,24 @@ import {
   AlertTriangle,
   Clock,
   FileVideo,
-  Link as LinkIcon,
+  XCircle,
+  RefreshCw,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import axios from "axios";
 import "./Validate.css";
 
-type Verdict = "Authentic" | "Unseen" | "Tampered";
+type Verdict = "validated" | "not_validated" | "partially_validated" | null;
+
+const BACKEND_URL = "http://localhost:8000";
 
 export const Validate: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState<"idle" | "hashing" | "done">("idle");
-  const [verdict, setVerdict] = useState<Verdict | null>(null);
-  const [digest, setDigest] = useState<string>("");
-  const [videoId, setVideoId] = useState<string>("");
+  const [status, setStatus] = useState<"idle" | "uploading" | "validating" | "done">("idle");
+  const [verdict, setVerdict] = useState<Verdict>(null);
+  const [message, setMessage] = useState<string>("");
+  const [chunkDetails, setChunkDetails] = useState<any[]>([]);
+  const [error, setError] = useState<string>("");
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -28,61 +32,124 @@ export const Validate: React.FC = () => {
     };
   }, []);
 
-  const onSelect = (selected: File) => {
+  const onSelect = async (selected: File) => {
     setFile(selected);
     setProgress(0);
-    setStatus("hashing");
+    setStatus("uploading");
     setVerdict(null);
-    simulateHashing(selected);
+    setMessage("");
+    setChunkDetails([]);
+    setError("");
+
+    await validateVideo(selected);
   };
 
-  const simulateHashing = (f: File) => {
-    const seedString = `${f.name}|${f.size}|${f.lastModified}`;
-    let seed = 0;
-    for (let i = 0; i < seedString.length; i++) {
-      seed = (seed * 31 + seedString.charCodeAt(i)) >>> 0;
-    }
-    const hex = seed.toString(16).padStart(8, "0");
-    const fakeDigest = `0x${hex}${hex}${hex}${hex}`.slice(0, 66);
-    const id = `vid-${hex.slice(0, 6)}`;
-    const verdicts: Verdict[] = ["Authentic", "Unseen", "Tampered"];
-    const chosen = verdicts[seed % verdicts.length];
+  const validateVideo = async (videoFile: File) => {
+    try {
+      // Start progress simulation
+      simulateProgress();
 
+      const formData = new FormData();
+      formData.append("video", videoFile);
+
+      setStatus("validating");
+
+      const response = await axios.post(
+        `${BACKEND_URL}/api/validate/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setProgress(Math.min(percentCompleted, 90));
+            }
+          },
+        }
+      );
+
+      // Stop progress simulation
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+
+      setProgress(100);
+      setStatus("done");
+      setVerdict(response.data.verdict);
+      setMessage(response.data.message);
+      setChunkDetails(response.data.chunk_details || []);
+
+      console.log("Validation result:", response.data);
+    } catch (err: any) {
+      console.error("Validation error:", err);
+      if (intervalRef.current) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+
+      setStatus("done");
+      setError(
+        err.response?.data?.detail || "Failed to validate video. Please try again."
+      );
+    }
+  };
+
+  const simulateProgress = () => {
     if (intervalRef.current) window.clearInterval(intervalRef.current);
+
     intervalRef.current = window.setInterval(() => {
       setProgress((p) => {
-        if (p >= 100) {
+        if (p >= 90) {
           if (intervalRef.current) window.clearInterval(intervalRef.current);
-          setDigest(fakeDigest);
-          setVideoId(id);
-          setVerdict(chosen);
-          setStatus("done");
-          return 100;
+          return 90;
         }
-        const next = Math.min(100, p + 6 + Math.floor(seed % 7));
-        return next;
+        return Math.min(90, p + Math.random() * 10);
       });
-    }, 140);
+    }, 300);
   };
 
   const onDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
     e.preventDefault();
     e.stopPropagation();
     const dropped = e.dataTransfer.files?.[0];
-    if (dropped) onSelect(dropped);
+    if (dropped && dropped.type.startsWith("video/")) {
+      onSelect(dropped);
+    } else {
+      setError("Please upload a valid video file");
+    }
   };
 
   const onPick: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const picked = e.target.files?.[0];
-    if (picked) onSelect(picked);
+    if (picked) {
+      onSelect(picked);
+    }
+  };
+
+  const reset = () => {
+    setFile(null);
+    setProgress(0);
+    setStatus("idle");
+    setVerdict(null);
+    setMessage("");
+    setChunkDetails([]);
+    setError("");
   };
 
   const StatusIcon =
-    verdict === "Authentic"
+    verdict === "validated"
       ? ShieldCheck
-      : verdict === "Tampered"
+      : verdict === "not_validated"
+      ? XCircle
+      : verdict === "partially_validated"
       ? AlertTriangle
       : Clock;
+
   const statusClass = verdict ? verdict.toLowerCase() : "";
 
   return (
@@ -96,9 +163,34 @@ export const Validate: React.FC = () => {
           <FileVideo className="title-icon" /> Validate Video Authenticity
         </h2>
         <p className="tagline">
-          Upload a video to simulate hashing and see a demo verdict.
+          Upload a video to verify if it was recorded on a facility camera.
         </p>
       </motion.div>
+
+      {/* Progress Bar */}
+      <AnimatePresence>
+        {status !== "idle" && status !== "done" && (
+          <motion.div
+            className="progress-bar-container"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <div className="progress-bar">
+              <motion.div
+                className="progress-fill"
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ ease: "easeOut", duration: 0.3 }}
+              />
+            </div>
+            <div className="progress-text">
+              <span>{status === "uploading" ? "Uploading..." : "Validating..."}</span>
+              <strong>{Math.round(progress)}%</strong>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid">
         <motion.div
@@ -120,29 +212,11 @@ export const Validate: React.FC = () => {
             {file && <span className="file-name">{file.name}</span>}
           </div>
 
-          <AnimatePresence>
-            {status !== "idle" && (
-              <motion.div
-                className="progress"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div className="bar">
-                  <motion.div
-                    className="fill"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    transition={{ ease: "easeInOut", duration: 0.2 }}
-                  />
-                </div>
-                <div className="meta">
-                  <span>Hashing...</span>
-                  <strong>{progress}%</strong>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {status === "done" && (
+            <button className="btn-reset" onClick={reset}>
+              <RefreshCw /> Validate Another Video
+            </button>
+          )}
         </motion.div>
 
         <motion.div
@@ -151,36 +225,54 @@ export const Validate: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
         >
           {status === "idle" && <p className="muted">No file selected.</p>}
-          {status !== "idle" && (
+          
+          {error && (
+            <div className="error-box">
+              <XCircle className="error-icon" />
+              <p>{error}</p>
+            </div>
+          )}
+
+          {status !== "idle" && !error && (
             <>
-              <div className="row">
-                <span>Digest</span>
-                <code>{digest || "-"}</code>
-              </div>
-              <div className="row">
-                <span>Video ID</span>
-                <strong>{videoId || "-"}</strong>
-              </div>
-              <div className="row">
-                <span>Status</span>
-                <span className={`verdict ${statusClass}`}>
-                  {status === "done" && verdict ? (
-                    <>
-                      <StatusIcon className="v-icon" /> {verdict}
-                    </>
+              <div className="verdict-section">
+                <div className={`verdict-badge ${statusClass}`}>
+                  <StatusIcon className="v-icon" />
+                  {status === "done" ? (
+                    <span>
+                      {verdict === "validated" && "Validated"}
+                      {verdict === "not_validated" && "Not Validated"}
+                      {verdict === "partially_validated" && "Partially Validated"}
+                    </span>
                   ) : (
-                    <>
-                      <Clock className="v-icon" /> Processing
-                    </>
+                    <span>Processing...</span>
                   )}
-                </span>
+                </div>
+
+                {status === "done" && message && (
+                  <p className="verdict-message">{message}</p>
+                )}
               </div>
 
-              {status === "done" && verdict && videoId && (
-                <div className="actions">
-                  <Link to={`/ledger/${videoId}`} className="action">
-                    <LinkIcon className="a-icon" /> View on Ledger
-                  </Link>
+              {status === "done" && chunkDetails.length > 0 && (
+                <div className="chunk-summary">
+                  <h4>Chunk Analysis</h4>
+                  <div className="chunk-details">
+                    {chunkDetails.map((chunk, idx) => (
+                      <div key={idx} className={`chunk-item ${chunk.status}`}>
+                        <span className="chunk-label">Chunk {chunk.chunk_index + 1}</span>
+                        <span className={`chunk-status ${chunk.status}`}>
+                          {chunk.status === "validated" ? (
+                            <ShieldCheck className="chunk-icon" />
+                          ) : (
+                            <XCircle className="chunk-icon" />
+                          )}
+                          {chunk.status}
+                        </span>
+                        <code className="chunk-hash">{chunk.hash.slice(0, 10)}...</code>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </>
@@ -192,3 +284,4 @@ export const Validate: React.FC = () => {
 };
 
 export default Validate;
+

@@ -33,7 +33,7 @@ export const Home: React.FC = () => {
           </p>
           <div className="cta-row">
             <Link to="/live" className="btn primary">
-              <PlayCircle /> Launch Live
+              <PlayCircle /> Start Monitoring
             </Link>
             <Link to="/validate" className="btn ghost">
               <ShieldCheck /> Validate Video

@@ -7,12 +7,12 @@ import {
   useLocation,
 } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import App from "./App";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { Ledger } from "./pages/Ledger";
 import { Validate } from "./pages/Validate";
 import { Home } from "./pages/Home";
+import { Monitor } from "./pages/Monitor";
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -27,7 +27,7 @@ const AnimatedRoutes: React.FC = () => {
       >
         <Routes location={location}>
           <Route path="/" element={<Home />} />
-          <Route path="/live" element={<App />} />
+          <Route path="/live" element={<Monitor />} />
           <Route path="/validate" element={<Validate />} />
           <Route path="/ledger/:videoId" element={<Ledger />} />
           <Route path="*" element={<Navigate to="/" replace />} />

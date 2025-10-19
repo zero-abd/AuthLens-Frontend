@@ -1,0 +1,342 @@
+.monitor-page {
+  min-height: 100vh;
+  padding: 2rem;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background effects similar to home */
+.monitor-page::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at 30% 50%,
+    rgba(255, 211, 106, 0.05) 0%,
+    transparent 50%
+  );
+  animation: pulse 8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.monitor-page .header {
+  text-align: center;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.monitor-page .header h2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(45deg, var(--accent), var(--accent-2));
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-weight: 900;
+}
+
+.monitor-page .title-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--accent);
+}
+
+.monitor-page .tagline {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.monitor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 1024px) {
+  .monitor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.monitor-page .card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.video-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.video-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 211, 106, 0.2);
+}
+
+.video-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--muted);
+}
+
+.video-overlay .camera-icon {
+  width: 4rem;
+  height: 4rem;
+  opacity: 0.5;
+  margin-bottom: 1rem;
+  color: var(--accent);
+}
+
+.video-controls {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-start {
+  background: var(--accent);
+  color: #0c0c1d;
+  border: 1px solid var(--accent);
+}
+
+.btn-start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 211, 106, 0.4);
+  background: var(--accent-2);
+}
+
+.btn-stop {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  border: 1px solid #ff6b6b;
+}
+
+.btn-stop:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.status-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
+}
+
+.status-card .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--accent);
+}
+
+.status-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Server Status Bubble */
+.status-bubble-container {
+  margin-bottom: 0.5rem;
+}
+
+.status-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  transition: all 0.3s ease;
+}
+
+.status-bubble.connected {
+  background: rgba(76, 175, 80, 0.15);
+  color: #7df57d;
+  border: 1px solid rgba(76, 175, 80, 0.4);
+}
+
+.status-bubble.disconnected {
+  background: rgba(244, 67, 54, 0.15);
+  color: #ff9f99;
+  border: 1px solid rgba(244, 67, 54, 0.4);
+}
+
+.bubble-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+.status-bubble.connected .bubble-dot {
+  background: #7df57d;
+  box-shadow: 0 0 8px #7df57d;
+}
+
+.status-bubble.disconnected .bubble-dot {
+  background: #ff9f99;
+  box-shadow: 0 0 8px #ff9f99;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-row span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.status-row strong {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.status-row strong.active {
+  color: var(--accent);
+}
+
+.status-row strong.inactive {
+  color: var(--muted);
+}
+
+.status-row strong.minutes-count {
+  color: var(--accent);
+  font-size: 1.5rem;
+}
+
+.status-message,
+.upload-status,
+.error-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+}
+
+.status-message {
+  background: rgba(255, 211, 106, 0.08);
+  color: #ffd36a;
+  border-color: rgba(255, 211, 106, 0.2);
+}
+
+.upload-status.success {
+  background: rgba(76, 175, 80, 0.08);
+  color: #7df57d;
+  border-color: rgba(76, 175, 80, 0.2);
+}
+
+.error-message {
+  background: rgba(244, 67, 54, 0.08);
+  color: #ff9f99;
+  border-color: rgba(244, 67, 54, 0.2);
+}
+
+.msg-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.status-message p,
+.upload-status p,
+.error-message p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
