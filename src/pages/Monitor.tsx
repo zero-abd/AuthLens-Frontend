@@ -13,6 +13,7 @@ export const Monitor: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [minutesCaptured, setMinutesCaptured] = useState(0);
   const [backendConnected, setBackendConnected] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -23,11 +24,17 @@ export const Monitor: React.FC = () => {
 
   useEffect(() => {
     checkBackendConnection();
-    const interval = setInterval(checkBackendConnection, 10000);
+    const backendInterval = setInterval(checkBackendConnection, 10000);
+    
+    // Update clock every second
+    const clockInterval = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString());
+    }, 1000);
 
     return () => {
       cleanup();
-      clearInterval(interval);
+      clearInterval(backendInterval);
+      clearInterval(clockInterval);
     };
   }, []);
 
@@ -142,7 +149,7 @@ export const Monitor: React.FC = () => {
         console.error("Failed to upload chunk:", err);
       }
 
-      if (isMonitoring) {
+      if (mediaRecorderRef.current !== null || nextMinuteTimeoutRef.current !== null) {
         scheduleNextChunk();
       }
     };
@@ -229,8 +236,10 @@ export const Monitor: React.FC = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.onstop = () => {
         console.log("Recording stopped without upload (incomplete chunk)");
+        mediaRecorderRef.current = null;
       };
       mediaRecorderRef.current.stop();
+    } else {
       mediaRecorderRef.current = null;
     }
 
@@ -319,7 +328,7 @@ export const Monitor: React.FC = () => {
 
             <div className="status-row">
               <span>Current Time:</span>
-              <strong>{new Date().toLocaleTimeString()}</strong>
+              <strong>{currentTime}</strong>
             </div>
           </div>
 
