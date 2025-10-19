@@ -85,7 +85,7 @@ export const Monitor: React.FC = () => {
   const addRemoteCamera = async () => {
     try {
       if (!newCameraName || !newCameraNgrokUrl) {
-        setError("Please provide both camera name and ngrok URL");
+        setError("Please provide both camera name and live URL");
         return;
       }
 
@@ -358,6 +358,80 @@ export const Monitor: React.FC = () => {
       </motion.div>
 
       <div className="monitor-grid">
+        {/* Status Card - First */}
+        <motion.div
+          className="card status-card"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h3>
+            <Clock className="icon" /> Status
+          </h3>
+
+          <div className="status-info">
+            <div className="status-bubble-container">
+              <div className={`status-bubble ${backendConnected ? "connected" : "disconnected"}`}>
+                <div className="bubble-dot"></div>
+                <span>Server: {backendConnected ? "Connected" : "Disconnected"}</span>
+              </div>
+            </div>
+
+            <div className="status-row">
+              <span>Local Camera:</span>
+              <strong className={isMonitoring ? "active" : "inactive"}>
+                {isMonitoring ? "Live" : "Stopped"}
+              </strong>
+            </div>
+
+            <div className="status-row">
+              <span>Cameras Monitoring:</span>
+              <strong className="active">
+                {(isMonitoring ? 1 : 0) + remoteCameras.filter(c => c.is_monitoring).length}
+              </strong>
+            </div>
+
+            <div className="status-row">
+              <span>Remote Cameras:</span>
+              <strong className={remoteCameras.filter(c => c.is_monitoring).length > 0 ? "active" : "inactive"}>
+                {remoteCameras.filter(c => c.is_monitoring).length} Monitoring
+              </strong>
+            </div>
+
+            <div className="status-row">
+              <span>Minutes Captured:</span>
+              <strong className="minutes-count">
+                {minutesCaptured + remoteCameras.reduce((sum, c) => sum + (c.chunks_recorded || 0), 0)}
+              </strong>
+            </div>
+
+            <div className="status-row">
+              <span>Current Time:</span>
+              <strong>{currentTime}</strong>
+            </div>
+          </div>
+
+          {status && (
+            <div className="status-message">
+              <Clock className="msg-icon" />
+              <p>{status}</p>
+            </div>
+          )}
+
+          {uploadStatus && (
+            <div className="upload-status success">
+              <CheckCircle className="msg-icon" />
+              <p>{uploadStatus}</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="error-message">
+              <AlertCircle className="msg-icon" />
+              <p>{error}</p>
+            </div>
+          )}
+        </motion.div>
+
         {/* Local Camera */}
         <motion.div
           className="card video-card"
@@ -514,7 +588,7 @@ export const Monitor: React.FC = () => {
               />
               <input
                 type="text"
-                placeholder="Ngrok URL (e.g., https://xxx.ngrok-free.app/video)"
+                placeholder="Camera Live URL (e.g., https://xxx.ngrok-free.app/video)"
                 value={newCameraNgrokUrl}
                 onChange={(e) => setNewCameraNgrokUrl(e.target.value)}
                 className="form-input"
@@ -534,72 +608,6 @@ export const Monitor: React.FC = () => {
                   Cancel
                 </button>
               </div>
-            </div>
-          )}
-        </motion.div>
-
-        <motion.div
-          className="card status-card"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h3>
-            <Clock className="icon" /> Status
-          </h3>
-
-          <div className="status-info">
-            <div className="status-bubble-container">
-              <div className={`status-bubble ${backendConnected ? "connected" : "disconnected"}`}>
-                <div className="bubble-dot"></div>
-                <span>Server: {backendConnected ? "Connected" : "Disconnected"}</span>
-              </div>
-            </div>
-
-            <div className="status-row">
-              <span>Local Camera:</span>
-              <strong className={isMonitoring ? "active" : "inactive"}>
-                {isMonitoring ? "Live" : "Stopped"}
-              </strong>
-            </div>
-
-            <div className="status-row">
-              <span>Remote Cameras:</span>
-              <strong className="active">
-                {remoteCameras.filter(c => c.is_monitoring).length} Monitoring
-              </strong>
-            </div>
-
-            <div className="status-row">
-              <span>Minutes Captured:</span>
-              <strong className="minutes-count">
-                {minutesCaptured + remoteCameras.reduce((sum, c) => sum + (c.chunks_recorded || 0), 0)}
-              </strong>
-            </div>
-
-            <div className="status-row">
-              <span>Current Time:</span>
-              <strong>{currentTime}</strong>
-            </div>
-          </div>
-
-          {status && (
-            <div className="status-message">
-              <Clock className="msg-icon" />
-              <p>{status}</p>
-            </div>
-          )}
-
-          {uploadStatus && (
-            <div className="upload-status success">
-              <CheckCircle className="msg-icon" />
-              <p>{uploadStatus}</p>
-            </div>
-          )}
-
-          {error && (
-            <div className="error-message">
-              <AlertCircle className="msg-icon" />
-              <p>{error}</p>
             </div>
           )}
         </motion.div>
