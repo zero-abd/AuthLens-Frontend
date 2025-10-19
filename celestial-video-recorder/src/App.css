@@ -6,15 +6,16 @@
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family: "Sora", system-ui, -apple-system, "Segoe UI", "Roboto",
+    sans-serif;
   overflow-x: hidden;
 }
 
 .app {
   min-height: 100vh;
   position: relative;
-  background: linear-gradient(135deg, #0c0c1d 0%, #1a1a2e 50%, #16213e 100%);
-  color: #ffffff;
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* Celestial Background */
@@ -55,8 +56,15 @@ body {
 }
 
 @keyframes twinkle {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
 }
 
 .nebula {
@@ -65,10 +73,12 @@ body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(ellipse at center, 
-    rgba(138, 43, 226, 0.1) 0%, 
-    rgba(75, 0, 130, 0.05) 30%, 
-    transparent 70%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(138, 43, 226, 0.1) 0%,
+    rgba(75, 0, 130, 0.05) 30%,
+    transparent 70%
+  );
   animation: nebula-drift 20s infinite linear;
 }
 
@@ -78,21 +88,31 @@ body {
   right: -30%;
   width: 60%;
   height: 60%;
-  background: radial-gradient(ellipse at center, 
-    rgba(255, 20, 147, 0.08) 0%, 
-    rgba(138, 43, 226, 0.05) 40%, 
-    transparent 70%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 20, 147, 0.08) 0%,
+    rgba(138, 43, 226, 0.05) 40%,
+    transparent 70%
+  );
   animation: galaxy-spin 30s infinite linear;
 }
 
 @keyframes nebula-drift {
-  0% { transform: rotate(0deg) translateX(0px); }
-  100% { transform: rotate(360deg) translateX(20px); }
+  0% {
+    transform: rotate(0deg) translateX(0px);
+  }
+  100% {
+    transform: rotate(360deg) translateX(20px);
+  }
 }
 
 @keyframes galaxy-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Main Content */
@@ -112,7 +132,7 @@ body {
 .title {
   font-size: 3.5rem;
   font-weight: 700;
-  background: linear-gradient(45deg, #ffd700, #87ceeb, #ff69b4, #9370db);
+  background: linear-gradient(45deg, var(--accent), var(--accent-2));
   background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -126,8 +146,13 @@ body {
 }
 
 @keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 .title-icon {
@@ -138,13 +163,20 @@ body {
 }
 
 @keyframes star-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.2); opacity: 1; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
 }
 
 .subtitle {
   font-size: 1.2rem;
-  color: #87ceeb;
+  color: var(--muted);
   opacity: 0.9;
   font-weight: 300;
 }
@@ -158,11 +190,11 @@ body {
 
 /* Video Section */
 .video-section {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
@@ -193,7 +225,7 @@ body {
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.7);
-  color: #87ceeb;
+  color: var(--accent-2);
 }
 
 .camera-icon {
@@ -225,7 +257,7 @@ body {
 }
 
 .control-btn.start {
-  background: linear-gradient(45deg, #4CAF50, #45a049);
+  background: linear-gradient(45deg, #4caf50, #45a049);
   color: white;
 }
 
@@ -246,8 +278,13 @@ body {
 }
 
 @keyframes recording-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7); }
-  50% { box-shadow: 0 0 0 10px rgba(255, 23, 68, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(255, 23, 68, 0);
+  }
 }
 
 .control-btn:disabled {
@@ -257,11 +294,11 @@ body {
 
 /* Controls Section */
 .controls-section {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
@@ -274,7 +311,7 @@ body {
   display: block;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: #87ceeb;
+  color: var(--accent-2);
 }
 
 .toggle-buttons {
@@ -287,10 +324,10 @@ body {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--card-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: var(--card);
+  color: var(--text);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -299,14 +336,14 @@ body {
 }
 
 .toggle-btn:hover {
-  border-color: #87ceeb;
+  border-color: var(--accent-2);
   background: rgba(135, 206, 235, 0.1);
 }
 
 .toggle-btn.active {
-  border-color: #ffd700;
+  border-color: var(--accent);
   background: rgba(255, 215, 0, 0.2);
-  color: #ffd700;
+  color: var(--accent);
 }
 
 .toggle-icon {
@@ -332,7 +369,7 @@ body {
 .status-indicator.connected {
   background: rgba(76, 175, 80, 0.2);
   border: 1px solid rgba(76, 175, 80, 0.5);
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .status-indicator.disconnected {
@@ -369,17 +406,17 @@ body {
 }
 
 .stream-instructions {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card);
   padding: 1rem;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #87ceeb;
+  border: 1px solid var(--card-border);
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.5;
 }
 
 .stream-instructions strong {
-  color: #ffd700;
+  color: var(--accent);
   word-break: break-all;
 }
 
@@ -393,34 +430,34 @@ body {
   gap: 0.5rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
-  color: #87ceeb;
+  color: var(--accent-2);
 }
 
 .input-icon {
   width: 1.2rem;
   height: 1.2rem;
-  color: #ffd700;
+  color: var(--accent);
 }
 
 .url-input {
   width: 100%;
   padding: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--card-border);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: var(--card);
+  color: var(--text);
   font-size: 1rem;
   transition: all 0.3s ease;
 }
 
 .url-input:focus {
   outline: none;
-  border-color: #87ceeb;
+  border-color: var(--accent-2);
   box-shadow: 0 0 0 3px rgba(135, 206, 235, 0.2);
 }
 
 .url-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(127, 127, 127, 0.6);
 }
 
 .frame-info {
@@ -432,15 +469,15 @@ body {
   align-items: center;
   gap: 0.5rem;
   padding: 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--card);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--card-border);
 }
 
 .frame-icon {
   width: 1.2rem;
   height: 1.2rem;
-  color: #ffd700;
+  color: var(--accent);
 }
 
 .action-buttons {
@@ -498,7 +535,7 @@ body {
 }
 
 .status-message.success {
-  background: linear-gradient(45deg, #4CAF50, #45a049);
+  background: linear-gradient(45deg, #4caf50, #45a049);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -509,7 +546,7 @@ body {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
-  
+
   .title {
     font-size: 2.5rem;
   }
@@ -519,21 +556,21 @@ body {
   .content {
     padding: 1rem;
   }
-  
+
   .title {
     font-size: 2rem;
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .video-controls {
     flex-direction: column;
   }
-  
+
   .control-btn {
     min-width: auto;
   }
-  
+
   .status-message {
     position: relative;
     top: auto;
@@ -544,12 +581,21 @@ body {
 
 /* Loading Animation */
 @keyframes shimmer {
-  0% { background-position: -200px 0; }
-  100% { background-position: calc(200px + 100%) 0; }
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
 }
 
 .loading {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
   background-size: 200px 100%;
   animation: shimmer 1.5s infinite;
 }
