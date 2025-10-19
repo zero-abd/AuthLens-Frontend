@@ -1,0 +1,68 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--glass);
+  border-bottom: 1px solid var(--card-border);
+  backdrop-filter: blur(10px);
+}
+
+.nav-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.brand-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.link {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 700;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+.link.active {
+  color: #0c0c1d;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  padding: 0.35rem 0.6rem;
+}
+
+.link-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.3rem;
+}
