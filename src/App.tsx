@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Camera, Play, Square, Star, Upload, Wifi, WifiOff, Zap } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import './App.css';
 
 interface FrameData {
@@ -10,7 +10,7 @@ interface FrameData {
   data: string; // base64 encoded image
 }
 
-const App: React.FC = () => {
+const App = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isLiveStreaming, setIsLiveStreaming] = useState(false);
@@ -25,7 +25,7 @@ const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const frameIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const frameIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
 
@@ -53,20 +53,7 @@ const App: React.FC = () => {
     createStars();
   }, []);
 
-  // WebSocket connection for live streaming
-  useEffect(() => {
-    if (streamMode === 'live') {
-      connectWebSocket();
-    }
-    
-    return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
-  }, [streamMode]);
-
-  const connectWebSocket = () => {
+  const connectWebSocket = useCallback(() => {
     try {
       // Connect to local streaming server on port 3001
       const wsUrl = 'ws://localhost:3001';
@@ -111,7 +98,20 @@ const App: React.FC = () => {
       console.error('❌ Error creating WebSocket:', error);
       setError('Invalid ngrok URL');
     }
-  };
+  }, [streamMode]);
+
+  // WebSocket connection for live streaming
+  useEffect(() => {
+    if (streamMode === 'live') {
+      connectWebSocket();
+    }
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, [streamMode, connectWebSocket]);
 
   const startCamera = async () => {
     try {
@@ -134,7 +134,7 @@ const App: React.FC = () => {
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track: any) => track.stop());
       streamRef.current = null;
     }
     if (videoRef.current) {
