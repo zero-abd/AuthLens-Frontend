@@ -20,12 +20,6 @@ const truncateHash = (hash: string, chars: number = 6): string => {
   return `...${hash.slice(-chars)}`;
 };
 
-const truncateCameraId = (camId: string, chars: number = 4): string => {
-  if (!camId) return camId;
-  if (camId.length <= chars) return camId;
-  return `...${camId.slice(-chars)}`;
-};
-
 export const Ledger: React.FC = () => {
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,7 +147,7 @@ export const Ledger: React.FC = () => {
                     </td>
                     <td className="camera-id">
                       <Camera size={14} />
-                      {truncateCameraId(entry.camera_id)}
+                      {entry.camera_id}
                     </td>
                     <td className="hash">
                       <Hash size={14} />

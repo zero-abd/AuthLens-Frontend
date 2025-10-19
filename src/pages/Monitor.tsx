@@ -1,10 +1,20 @@
 import React, { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Video, Square, Clock, AlertCircle, CheckCircle } from "lucide-react";
+import { Video, Square, Clock, AlertCircle, CheckCircle, Trash2, Globe } from "lucide-react";
 import axios from "axios";
 import "./Monitor.css";
 
 const BACKEND_URL = "http://localhost:8000";
+
+interface RemoteCamera {
+  camera_id: string;
+  camera_name: string;
+  ngrok_url: string;
+  status: string;
+  created_at: string;
+  chunks_recorded?: number;
+  is_monitoring?: boolean;
+}
 
 export const Monitor: React.FC = () => {
   const [isMonitoring, setIsMonitoring] = useState(false);
@@ -14,6 +24,12 @@ export const Monitor: React.FC = () => {
   const [minutesCaptured, setMinutesCaptured] = useState(0);
   const [backendConnected, setBackendConnected] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
+
+  // Remote cameras state
+  const [remoteCameras, setRemoteCameras] = useState<RemoteCamera[]>([]);
+  const [showAddCameraForm, setShowAddCameraForm] = useState(false);
+  const [newCameraName, setNewCameraName] = useState("");
+  const [newCameraNgrokUrl, setNewCameraNgrokUrl] = useState("");
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -26,7 +42,11 @@ export const Monitor: React.FC = () => {
 
   useEffect(() => {
     checkBackendConnection();
-    const backendInterval = setInterval(checkBackendConnection, 10000);
+    loadRemoteCameras();
+    const backendInterval = setInterval(() => {
+      checkBackendConnection();
+      loadRemoteCameras();
+    }, 10000);
     
     // Update clock every second
     const clockInterval = setInterval(() => {
@@ -48,6 +68,77 @@ export const Monitor: React.FC = () => {
       }
     } catch (err) {
       setBackendConnected(false);
+    }
+  };
+
+  const loadRemoteCameras = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/remote-cameras/list`);
+      if (response.data.success) {
+        setRemoteCameras(response.data.cameras);
+      }
+    } catch (err) {
+      console.error("Error loading remote cameras:", err);
+    }
+  };
+
+  const addRemoteCamera = async () => {
+    try {
+      if (!newCameraName || !newCameraNgrokUrl) {
+        setError("Please provide both camera name and ngrok URL");
+        return;
+      }
+
+      const response = await axios.post(`${BACKEND_URL}/api/remote-cameras/add`, {
+        camera_name: newCameraName,
+        ngrok_url: newCameraNgrokUrl,
+      });
+
+      if (response.data.success) {
+        setNewCameraName("");
+        setNewCameraNgrokUrl("");
+        setShowAddCameraForm(false);
+        loadRemoteCameras();
+        setUploadStatus(`✓ Camera "${newCameraName}" added successfully`);
+      }
+    } catch (err: any) {
+      setError(`Failed to add camera: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  const removeRemoteCamera = async (cameraId: string) => {
+    try {
+      const response = await axios.delete(`${BACKEND_URL}/api/remote-cameras/${cameraId}`);
+      if (response.data.success) {
+        loadRemoteCameras();
+        setUploadStatus(`✓ Camera removed successfully`);
+      }
+    } catch (err: any) {
+      setError(`Failed to remove camera: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  const startRemoteCameraMonitoring = async (cameraId: string) => {
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/remote-cameras/${cameraId}/start`);
+      if (response.data.success) {
+        loadRemoteCameras();
+        setUploadStatus(`✓ ${response.data.message}`);
+      }
+    } catch (err: any) {
+      setError(`Failed to start monitoring: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  const stopRemoteCameraMonitoring = async (cameraId: string) => {
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/remote-cameras/${cameraId}/stop`);
+      if (response.data.success) {
+        loadRemoteCameras();
+        setUploadStatus(`✓ ${response.data.message}`);
+      }
+    } catch (err: any) {
+      setError(`Failed to stop monitoring: ${err.response?.data?.detail || err.message}`);
     }
   };
 
@@ -267,11 +358,15 @@ export const Monitor: React.FC = () => {
       </motion.div>
 
       <div className="monitor-grid">
+        {/* Local Camera */}
         <motion.div
           className="card video-card"
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
         >
+          <div className="camera-header">
+            <h3>📹 Local Camera</h3>
+          </div>
           <div className="video-container">
             <video ref={videoRef} autoPlay muted playsInline className="video-preview" />
             {!isMonitoring && (
@@ -298,6 +393,149 @@ export const Monitor: React.FC = () => {
               )}
             </button>
           </div>
+
+          <div className="status-info">
+            <div className="status-row">
+              <span>Status:</span>
+              <strong className={isMonitoring ? "active" : "inactive"}>
+                {isMonitoring ? "Live" : "Stopped"}
+              </strong>
+            </div>
+            <div className="status-row">
+              <span>Minutes Recorded:</span>
+              <strong className="minutes-count">{minutesCaptured}</strong>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Remote Cameras - Same Layout as Local Camera */}
+        {remoteCameras.map((camera) => (
+          <motion.div
+            key={camera.camera_id}
+            className="card video-card"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
+            <div className="camera-header">
+              <h3>📹 {camera.camera_name}</h3>
+              <button
+                className="btn-icon btn-delete"
+                onClick={() => removeRemoteCamera(camera.camera_id)}
+                title="Remove camera"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+            
+            <div className="video-container">
+              {camera.is_monitoring ? (
+                <img
+                  src={`${BACKEND_URL}/api/remote-cameras/${camera.camera_id}/stream`}
+                  alt={camera.camera_name}
+                  className="video-preview"
+                  style={{ 
+                    display: 'block',
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover',
+                    backgroundColor: '#000'
+                  }}
+                />
+              ) : (
+                <div className="video-overlay">
+                  <Video className="camera-icon" />
+                  <p>Click Start Monitoring to begin</p>
+                </div>
+              )}
+            </div>
+
+            <div className="video-controls">
+              <button
+                className={`btn ${camera.is_monitoring ? "btn-stop" : "btn-start"}`}
+                onClick={camera.is_monitoring 
+                  ? () => stopRemoteCameraMonitoring(camera.camera_id)
+                  : () => startRemoteCameraMonitoring(camera.camera_id)
+                }
+              >
+                {camera.is_monitoring ? (
+                  <>
+                    <Square /> Stop Monitoring
+                  </>
+                ) : (
+                  <>
+                    <Video /> Start Monitoring
+                  </>
+                )}
+              </button>
+            </div>
+
+            <div className="status-info">
+              <div className="status-row">
+                <span>Status:</span>
+                <strong className={camera.is_monitoring ? "active" : "inactive"}>
+                  {camera.is_monitoring ? "Live" : "Stopped"}
+                </strong>
+              </div>
+              <div className="status-row">
+                <span>Minutes Recorded:</span>
+                <strong className="minutes-count">{camera.chunks_recorded || 0}</strong>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+
+        {/* Add Remote Camera Card */}
+        <motion.div
+          className="card"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="camera-header">
+            <h3>
+              <Globe className="icon" /> Add Remote Camera
+            </h3>
+          </div>
+
+          {!showAddCameraForm ? (
+            <div className="video-container" style={{ cursor: 'pointer' }} onClick={() => setShowAddCameraForm(true)}>
+              <div className="video-overlay">
+                <Globe size={64} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                <p>Click to add a remote camera</p>
+              </div>
+            </div>
+          ) : (
+            <div className="add-camera-form">
+              <input
+                type="text"
+                placeholder="Camera Name (e.g., Front Entrance)"
+                value={newCameraName}
+                onChange={(e) => setNewCameraName(e.target.value)}
+                className="form-input"
+              />
+              <input
+                type="text"
+                placeholder="Ngrok URL (e.g., https://xxx.ngrok-free.app/video)"
+                value={newCameraNgrokUrl}
+                onChange={(e) => setNewCameraNgrokUrl(e.target.value)}
+                className="form-input"
+              />
+              <div className="form-buttons">
+                <button className="btn btn-primary" onClick={addRemoteCamera}>
+                  Add Camera
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowAddCameraForm(false);
+                    setNewCameraName("");
+                    setNewCameraNgrokUrl("");
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </motion.div>
 
         <motion.div
@@ -318,15 +556,24 @@ export const Monitor: React.FC = () => {
             </div>
 
             <div className="status-row">
-              <span>Monitoring:</span>
+              <span>Local Camera:</span>
               <strong className={isMonitoring ? "active" : "inactive"}>
                 {isMonitoring ? "Live" : "Stopped"}
               </strong>
             </div>
 
             <div className="status-row">
+              <span>Remote Cameras:</span>
+              <strong className="active">
+                {remoteCameras.filter(c => c.is_monitoring).length} Monitoring
+              </strong>
+            </div>
+
+            <div className="status-row">
               <span>Minutes Captured:</span>
-              <strong className="minutes-count">{minutesCaptured}</strong>
+              <strong className="minutes-count">
+                {minutesCaptured + remoteCameras.reduce((sum, c) => sum + (c.chunks_recorded || 0), 0)}
+              </strong>
             </div>
 
             <div className="status-row">

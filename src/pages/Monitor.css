@@ -66,9 +66,9 @@
 
 .monitor-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
   gap: 2rem;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
   position: relative;
   z-index: 1;
@@ -339,4 +339,175 @@
   font-size: 0.875rem;
   line-height: 1.5;
   font-weight: 500;
+}
+
+/* Camera Header */
+.camera-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.camera-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--accent);
+}
+
+.camera-header .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Status Indicator - Shared by all cameras */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-indicator.active {
+  background: #4caf50;
+  animation: blink 2s ease-in-out infinite;
+}
+
+.status-indicator.stopped,
+.status-indicator.inactive {
+  background: #f44336;
+  animation: none;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Add Camera Button */
+.btn-add-camera {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0a0e27;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-add-camera:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 211, 106, 0.4);
+}
+
+/* Add Camera Form */
+.add-camera-form {
+  background: rgba(255, 211, 106, 0.05);
+  border: 1px solid rgba(255, 211, 106, 0.2);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 211, 106, 0.3);
+  border-radius: 0.5rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.form-input::placeholder {
+  color: var(--muted);
+}
+
+.form-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0a0e27;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 211, 106, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+  border: 1px solid rgba(255, 211, 106, 0.3);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Delete Button */
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: var(--muted);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete:hover {
+  color: #ff9f99;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--muted);
+}
+
+.empty-state svg {
+  color: var(--accent);
+  opacity: 0.3;
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  margin: 0.5rem 0;
+}
+
+.empty-hint {
+  font-size: 0.875rem;
+  opacity: 0.7;
 }
