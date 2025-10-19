@@ -25,6 +25,7 @@ const AnimatedRoutes: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.25 }}
+        style={{ width: '100%' }}
       >
         <Routes location={location}>
           <Route path="/" element={<Home />} />
