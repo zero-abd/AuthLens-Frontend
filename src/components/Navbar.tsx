@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Camera, ShieldCheck, BookText, House, Sun, Moon } from "lucide-react";
+import { Camera, ShieldCheck, BookText, House, Sun, Moon, Download } from "lucide-react";
 import "./Navbar.css";
 
 export const Navbar: React.FC = () => {
@@ -35,6 +35,12 @@ export const Navbar: React.FC = () => {
             className={({ isActive }) => `link ${isActive ? "active" : ""}`}
           >
             Live
+          </NavLink>
+          <NavLink
+            to="/download"
+            className={({ isActive }) => `link ${isActive ? "active" : ""}`}
+          >
+            <Download className="link-icon" /> Download
           </NavLink>
           <NavLink
             to="/validate"

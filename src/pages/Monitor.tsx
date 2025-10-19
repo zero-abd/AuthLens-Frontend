@@ -21,6 +21,8 @@ export const Monitor: React.FC = () => {
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const nextMinuteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMonitoringRef = useRef<boolean>(false);
+  const minutesCountRef = useRef<number>(0);
 
   useEffect(() => {
     checkBackendConnection();
@@ -114,7 +116,7 @@ export const Monitor: React.FC = () => {
 
       console.log("Chunk uploaded:", response.data);
       setUploadStatus(`✓ Chunk uploaded successfully`);
-      setMinutesCaptured((prev) => prev + 1);
+      setMinutesCaptured(minutesCountRef.current);
 
       return response.data;
     } catch (err: any) {
@@ -149,13 +151,15 @@ export const Monitor: React.FC = () => {
         console.error("Failed to upload chunk:", err);
       }
 
-      if (mediaRecorderRef.current !== null || nextMinuteTimeoutRef.current !== null) {
+      // Only schedule next chunk if monitoring is still active
+      if (isMonitoringRef.current) {
         scheduleNextChunk();
       }
     };
 
     mediaRecorder.start();
-    setStatus(`Recording minute ${minutesCaptured + 1}...`);
+    minutesCountRef.current += 1;
+    setStatus(`Recording minute ${minutesCountRef.current}...`);
 
     const duration = endTime.getTime() - startTime.getTime();
     recordingTimeoutRef.current = setTimeout(() => {
@@ -166,6 +170,7 @@ export const Monitor: React.FC = () => {
   };
 
   const scheduleNextChunk = () => {
+    // Start recording immediately for the next minute
     const now = new Date();
     const nextStart = new Date(now);
     nextStart.setSeconds(0, 0);
@@ -174,19 +179,15 @@ export const Monitor: React.FC = () => {
     const nextEnd = new Date(nextStart);
     nextEnd.setMinutes(nextEnd.getMinutes() + 1);
 
-    const delay = nextStart.getTime() - now.getTime();
-
-    nextMinuteTimeoutRef.current = setTimeout(() => {
-      startRecordingChunk(nextStart, nextEnd);
-    }, delay);
-
-    setStatus(`Next recording at ${nextStart.toLocaleTimeString()}`);
+    // Start recording immediately instead of waiting
+    startRecordingChunk(nextStart, nextEnd);
   };
 
   const startMonitoring = async () => {
     try {
       setError("");
       setMinutesCaptured(0);
+      minutesCountRef.current = 0;
       setStatus("Starting camera...");
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -200,6 +201,7 @@ export const Monitor: React.FC = () => {
       }
 
       setIsMonitoring(true);
+      isMonitoringRef.current = true;
 
       const now = new Date();
       const nextStart = getNextMinuteMark();
@@ -222,6 +224,7 @@ export const Monitor: React.FC = () => {
   const stopMonitoring = () => {
     setStatus("Stopping monitoring...");
     setIsMonitoring(false);
+    isMonitoringRef.current = false;
 
     if (nextMinuteTimeoutRef.current) {
       clearTimeout(nextMinuteTimeoutRef.current);
