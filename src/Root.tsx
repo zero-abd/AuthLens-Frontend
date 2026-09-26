@@ -7,12 +7,14 @@ import {
   useLocation,
 } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import App from "./App";
 import { Navbar } from "./components/Navbar";
 import { Footer } from "./components/Footer";
 import { Ledger } from "./pages/Ledger";
 import { Validate } from "./pages/Validate";
 import { Home } from "./pages/Home";
+import { Monitor } from "./pages/Monitor";
+import { Download } from "./pages/Download";
+import { HAS_BACKEND } from "./config";
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -24,12 +26,18 @@ const AnimatedRoutes: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.25 }}
+        style={{ width: '100%' }}
       >
         <Routes location={location}>
           <Route path="/" element={<Home />} />
-          <Route path="/live" element={<App />} />
           <Route path="/validate" element={<Validate />} />
-          <Route path="/ledger/:videoId" element={<Ledger />} />
+          {HAS_BACKEND && (
+            <>
+              <Route path="/live" element={<Monitor />} />
+              <Route path="/download" element={<Download />} />
+              <Route path="/ledger/:videoId" element={<Ledger />} />
+            </>
+          )}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </motion.div>
