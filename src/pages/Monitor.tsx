@@ -4,7 +4,7 @@ import { Video, Square, Clock, AlertCircle, CheckCircle, Trash2, Globe } from "l
 import axios from "axios";
 import "./Monitor.css";
 
-const BACKEND_URL = "http://localhost:8000";
+import { BACKEND_URL } from "../config";
 
 interface RemoteCamera {
   camera_id: string;

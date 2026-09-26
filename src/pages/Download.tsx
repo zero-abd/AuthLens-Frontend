@@ -4,7 +4,7 @@ import { Download as DownloadIcon, Calendar, Clock, Camera, AlertCircle, CheckCi
 import axios from "axios";
 import "./Download.css";
 
-const BACKEND_URL = "http://localhost:8000";
+import { BACKEND_URL } from "../config";
 
 export const Download: React.FC = () => {
   const [cameraId, setCameraId] = useState("cam_1");

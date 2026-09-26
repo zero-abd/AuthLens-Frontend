@@ -14,6 +14,7 @@ import { Validate } from "./pages/Validate";
 import { Home } from "./pages/Home";
 import { Monitor } from "./pages/Monitor";
 import { Download } from "./pages/Download";
+import { HAS_BACKEND } from "./config";
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -29,10 +30,14 @@ const AnimatedRoutes: React.FC = () => {
       >
         <Routes location={location}>
           <Route path="/" element={<Home />} />
-          <Route path="/live" element={<Monitor />} />
-          <Route path="/download" element={<Download />} />
           <Route path="/validate" element={<Validate />} />
-          <Route path="/ledger/:videoId" element={<Ledger />} />
+          {HAS_BACKEND && (
+            <>
+              <Route path="/live" element={<Monitor />} />
+              <Route path="/download" element={<Download />} />
+              <Route path="/ledger/:videoId" element={<Ledger />} />
+            </>
+          )}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </motion.div>

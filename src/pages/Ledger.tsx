@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShieldCheck, AlertTriangle, Clock, ArrowLeft, Hash, Camera, FileText } from "lucide-react";
 import "./Ledger.css";
+import { BACKEND_URL } from "../config";
 
 interface LedgerEntry {
   timestamp: string;
@@ -32,7 +33,7 @@ export const Ledger: React.FC = () => {
   const fetchLedger = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8000/api/ledger");
+      const response = await fetch(`${BACKEND_URL}/api/ledger`);
       const data = await response.json();
       
       if (data.success) {

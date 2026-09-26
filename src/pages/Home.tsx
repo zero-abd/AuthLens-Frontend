@@ -11,6 +11,9 @@ import {
   PlayCircle,
 } from "lucide-react";
 import "./Home.css";
+import { HAS_BACKEND } from "../config";
+
+const REPO_URL = "https://github.com/zero-abd/AuthLens";
 
 export const Home: React.FC = () => {
   return (
@@ -24,20 +27,26 @@ export const Home: React.FC = () => {
           transition={{ duration: 0.6 }}
         >
           <div className="badge">
-            <Sparkles className="bicon" /> New: Live CCTV + Demo Verification
+            <Sparkles className="bicon" /> Built at HackTX 2025 · Live on Ethereum Sepolia
           </div>
           <h1 className="headline">AuthLens</h1>
           <p className="subhead">
-            Capture and validate video authenticity with elegant, instant
-            feedback.
+            CCTV footage is hashed and anchored on Ethereum. Anyone can check
+            that a clip is byte-for-byte the original, with no trust in us.
           </p>
           <div className="cta-row">
-            <Link to="/live" className="btn primary">
-              <PlayCircle /> Start Monitoring
+            <Link to="/validate" className="btn primary">
+              <ShieldCheck /> Verify a video
             </Link>
-            <Link to="/validate" className="btn ghost">
-              <ShieldCheck /> Validate Video
-            </Link>
+            {HAS_BACKEND ? (
+              <Link to="/live" className="btn ghost">
+                <PlayCircle /> Start Monitoring
+              </Link>
+            ) : (
+              <a href={REPO_URL} className="btn ghost" target="_blank" rel="noreferrer">
+                <PlayCircle /> Run the recorder locally
+              </a>
+            )}
           </div>
         </motion.div>
         <div className="bg-accents">
@@ -61,8 +70,8 @@ export const Home: React.FC = () => {
             </div>
             <h3>Live Capture</h3>
             <p>
-              Stream from your camera in real time with smooth WebSocket
-              delivery.
+              The recorder cuts camera footage into one-minute chunks and
+              registers each one as it is written.
             </p>
           </motion.div>
           <motion.div
@@ -76,8 +85,8 @@ export const Home: React.FC = () => {
             </div>
             <h3>On-Device Hashing</h3>
             <p>
-              Efficient client-side hashing to anchor frames without blocking
-              UI.
+              SHA-256 runs in your browser, so a video you verify never leaves
+              your device.
             </p>
           </motion.div>
           <motion.div
@@ -91,7 +100,7 @@ export const Home: React.FC = () => {
             </div>
             <h3>Tamper Evident</h3>
             <p>
-              Immutable ledger entries make alterations detectable at a glance.
+              Change one byte and the hash no longer matches the one on chain.
             </p>
           </motion.div>
           <motion.div
@@ -104,7 +113,7 @@ export const Home: React.FC = () => {
               <BookText />
             </div>
             <h3>Simple Proofs</h3>
-            <p>Human-friendly proofs with clean, developer-ready references.</p>
+            <p>Each proof shows the uploader, block, time and transaction on Etherscan.</p>
           </motion.div>
         </div>
       </section>
@@ -120,17 +129,17 @@ export const Home: React.FC = () => {
           <ArrowRight className="arrow" />
           <div className="flow-step">
             <span className="pill">2</span>
-            Frames
+            SHA-256
           </div>
           <ArrowRight className="arrow" />
           <div className="flow-step">
             <span className="pill">3</span>
-            Verification
+            Ethereum
           </div>
           <ArrowRight className="arrow" />
           <div className="flow-step">
             <span className="pill">4</span>
-            Ledger
+            Verify
           </div>
         </div>
       </section>
@@ -147,10 +156,19 @@ export const Home: React.FC = () => {
             <div className="qhead">
               <Camera /> Live CCTV
             </div>
-            <p>Record and stream your camera. Ideal for live demos.</p>
-            <Link to="/live" className="qbtn">
-              Open Live <ArrowRight />
-            </Link>
+            <p>
+              Recording runs locally with the FastAPI backend, which signs each
+              chunk's hash to the contract.
+            </p>
+            {HAS_BACKEND ? (
+              <Link to="/live" className="qbtn">
+                Open Live <ArrowRight />
+              </Link>
+            ) : (
+              <a href={REPO_URL} className="qbtn" target="_blank" rel="noreferrer">
+                Setup on GitHub <ArrowRight />
+              </a>
+            )}
           </motion.div>
           <motion.div
             className="qcard"
@@ -161,9 +179,12 @@ export const Home: React.FC = () => {
             <div className="qhead">
               <ShieldCheck /> Validate
             </div>
-            <p>Upload any video and get a demo verdict instantly.</p>
+            <p>
+              Check any video against the contract, or register your own with
+              MetaMask on Sepolia.
+            </p>
             <Link to="/validate" className="qbtn">
-              Try Validate <ArrowRight />
+              Verify a video <ArrowRight />
             </Link>
           </motion.div>
         </div>
@@ -175,11 +196,8 @@ export const Home: React.FC = () => {
           <h3>Ship trust with every frame.</h3>
           <p>AuthLens brings verifiability to your video pipelines.</p>
           <div className="cta-row">
-            <Link to="/live" className="btn primary">
-              <PlayCircle /> Launch Live
-            </Link>
-            <Link to="/validate" className="btn ghost">
-              <ShieldCheck /> Validate
+            <Link to="/validate" className="btn primary">
+              <ShieldCheck /> Verify a video
             </Link>
           </div>
         </div>

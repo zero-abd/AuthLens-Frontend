@@ -1,231 +1,259 @@
-import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useRef, useState } from "react";
+import { motion } from "framer-motion";
 import {
   UploadCloud,
   ShieldCheck,
-  AlertTriangle,
+  XCircle,
   Clock,
   FileVideo,
-  XCircle,
   RefreshCw,
+  Wallet,
+  Hash,
+  ExternalLink,
 } from "lucide-react";
-import axios from "axios";
+import {
+  CONTRACT_ADDRESS,
+  ETHERSCAN,
+  OnChainStatus,
+  Registration,
+  connectWallet,
+  findRegistration,
+  hasWallet,
+  isHash,
+  registerHash,
+  sha256File,
+  verifyHash,
+  walletErrorMessage,
+} from "../lib/chain";
 import "./Validate.css";
 
-type Verdict = "validated" | "not_validated" | "partially_validated" | null;
+// A one-minute CCTV chunk registered by the AuthLens backend during HackTX 2025.
+const EXAMPLE_HASH = "0xce734ec3b380e86fbbc194b1b9c7403164ec1593fe049327df59544d95ab30c0";
 
-const BACKEND_URL = "http://localhost:8000";
+type Phase = "idle" | "hashing" | "checking" | "done";
+type RegPhase = "idle" | "connecting" | "ready" | "signing" | "mining" | "done";
+
+const short = (s: string, n = 6) => `${s.slice(0, n + 2)}…${s.slice(-n)}`;
 
 export const Validate: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState<"idle" | "uploading" | "validating" | "done">("idle");
-  const [verdict, setVerdict] = useState<Verdict>(null);
-  const [message, setMessage] = useState<string>("");
-  const [chunkDetails, setChunkDetails] = useState<any[]>([]);
-  const [error, setError] = useState<string>("");
-  const intervalRef = useRef<number | null>(null);
+  const [hash, setHash] = useState("");
+  const [hashInput, setHashInput] = useState("");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [status, setStatus] = useState<OnChainStatus | null>(null);
+  const [registration, setRegistration] = useState<Registration | null>(null);
+  const [scan, setScan] = useState<number | null>(null);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) window.clearInterval(intervalRef.current);
-    };
-  }, []);
+  const [account, setAccount] = useState("");
+  const [regPhase, setRegPhase] = useState<RegPhase>("idle");
+  const [pendingTx, setPendingTx] = useState("");
+  const [regError, setRegError] = useState("");
 
-  const onSelect = async (selected: File) => {
-    setFile(selected);
-    setProgress(0);
-    setStatus("uploading");
-    setVerdict(null);
-    setMessage("");
-    setChunkDetails([]);
+  const runId = useRef(0);
+
+  const check = async (h: string) => {
+    const run = ++runId.current;
+    setPhase("checking");
+    setStatus(null);
+    setRegistration(null);
+    setScan(null);
     setError("");
-
-    await validateVideo(selected);
-  };
-
-  const validateVideo = async (videoFile: File) => {
     try {
-      // Start progress simulation
-      simulateProgress();
-
-      const formData = new FormData();
-      formData.append("video", videoFile);
-
-      setStatus("validating");
-
-      const response = await axios.post(
-        `${BACKEND_URL}/api/validate/upload`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setProgress(Math.min(percentCompleted, 90));
-            }
-          },
-        }
-      );
-
-      // Stop progress simulation
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
+      const s = await verifyHash(h);
+      if (run !== runId.current) return;
+      setStatus(s);
+      setPhase("done");
+      if (s.exists) {
+        setScan(0);
+        const r = await findRegistration(h, (f) => run === runId.current && setScan(f));
+        if (run !== runId.current) return;
+        setRegistration(r);
+        setScan(null);
       }
-
-      setProgress(100);
-      setStatus("done");
-      setVerdict(response.data.verdict);
-      setMessage(response.data.message);
-      setChunkDetails(response.data.chunk_details || []);
-
-      console.log("Validation result:", response.data);
-    } catch (err: any) {
-      console.error("Validation error:", err);
-      if (intervalRef.current) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-
-      setStatus("done");
-      setError(
-        err.response?.data?.detail || "Failed to validate video. Please try again."
-      );
+    } catch (e: any) {
+      if (run !== runId.current) return;
+      setPhase("done");
+      setScan(null);
+      setError(`Could not read the Sepolia contract: ${e?.shortMessage || e?.message || e}`);
     }
   };
 
-  const simulateProgress = () => {
-    if (intervalRef.current) window.clearInterval(intervalRef.current);
+  const onSelect = async (selected: File) => {
+    const run = ++runId.current;
+    setFile(selected);
+    setHash("");
+    setStatus(null);
+    setRegistration(null);
+    setError("");
+    setRegPhase(account ? "ready" : "idle");
+    setRegError("");
+    setPendingTx("");
+    setPhase("hashing");
+    try {
+      const h = await sha256File(selected);
+      if (run !== runId.current) return;
+      setHash(h);
+      await check(h);
+    } catch (e: any) {
+      setPhase("done");
+      setError(`Could not hash the file: ${e?.message || e}`);
+    }
+  };
 
-    intervalRef.current = window.setInterval(() => {
-      setProgress((p) => {
-        if (p >= 90) {
-          if (intervalRef.current) window.clearInterval(intervalRef.current);
-          return 90;
-        }
-        return Math.min(90, p + Math.random() * 10);
-      });
-    }, 300);
+  const onLookup = (raw: string) => {
+    const h = raw.trim().toLowerCase();
+    if (!isHash(h)) {
+      setError("A video hash is 0x followed by 64 hex characters.");
+      return;
+    }
+    setFile(null);
+    setHash(h);
+    setRegError("");
+    setPendingTx("");
+    check(h);
   };
 
   const onDrop: React.DragEventHandler<HTMLDivElement> = (e) => {
     e.preventDefault();
-    e.stopPropagation();
     const dropped = e.dataTransfer.files?.[0];
-    if (dropped && dropped.type.startsWith("video/")) {
-      onSelect(dropped);
-    } else {
-      setError("Please upload a valid video file");
-    }
+    if (dropped) onSelect(dropped);
   };
 
   const onPick: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const picked = e.target.files?.[0];
-    if (picked) {
-      onSelect(picked);
-    }
+    if (picked) onSelect(picked);
+    e.target.value = "";
   };
 
   const reset = () => {
+    runId.current++;
     setFile(null);
-    setProgress(0);
-    setStatus("idle");
-    setVerdict(null);
-    setMessage("");
-    setChunkDetails([]);
+    setHash("");
+    setHashInput("");
+    setPhase("idle");
+    setStatus(null);
+    setRegistration(null);
+    setScan(null);
     setError("");
+    setRegError("");
+    setPendingTx("");
+    setRegPhase(account ? "ready" : "idle");
   };
 
-  const StatusIcon =
-    verdict === "validated"
-      ? ShieldCheck
-      : verdict === "not_validated"
-      ? XCircle
-      : verdict === "partially_validated"
-      ? AlertTriangle
-      : Clock;
+  const onConnect = async () => {
+    setRegError("");
+    setRegPhase("connecting");
+    try {
+      setAccount(await connectWallet());
+      setRegPhase("ready");
+    } catch (e) {
+      setRegError(walletErrorMessage(e));
+      setRegPhase("idle");
+    }
+  };
 
-  const statusClass = verdict ? verdict.toLowerCase() : "";
+  const onRegister = async () => {
+    setRegError("");
+    setRegPhase("signing");
+    try {
+      const fresh = await verifyHash(hash);
+      if (fresh.exists) {
+        setRegPhase("ready");
+        await check(hash);
+        return;
+      }
+      await registerHash(hash, (tx) => {
+        setPendingTx(tx);
+        setRegPhase("mining");
+      });
+      setRegPhase("done");
+      await check(hash);
+    } catch (e) {
+      setRegError(walletErrorMessage(e));
+      setRegPhase("ready");
+    }
+  };
+
+  const verdict = phase !== "done" || !status ? null : status.exists ? "registered" : "missing";
 
   return (
     <div className="validate-page">
-      <motion.div
-        className="header"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <motion.div className="header" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h2>
-          <FileVideo className="title-icon" /> Validate Video Authenticity
+          <FileVideo className="title-icon" /> Verify a video
         </h2>
         <p className="tagline">
-          Upload a video to verify if it was recorded on a facility camera.
+          Your browser computes the file's SHA-256 and checks it against the AuthLens contract on
+          Ethereum Sepolia. The video never leaves your device.
         </p>
       </motion.div>
 
-      {/* Progress Bar */}
-      <AnimatePresence>
-        {status !== "idle" && status !== "done" && (
-          <motion.div
-            className="progress-bar-container"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <div className="progress-bar">
-              <motion.div
-                className="progress-fill"
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ ease: "easeOut", duration: 0.3 }}
-              />
-            </div>
-            <div className="progress-text">
-              <span>{status === "uploading" ? "Uploading..." : "Validating..."}</span>
-              <strong>{Math.round(progress)}%</strong>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="grid">
-        <motion.div
-          className="card uploader"
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <div
-            className="dropzone"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={onDrop}
-          >
+        <motion.div className="card uploader" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+          <div className="dropzone" onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
             <UploadCloud className="dz-icon" />
             <p>Drag and drop a video here or</p>
             <label className="btn">
-              Choose File
+              Choose file
               <input type="file" accept="video/*" onChange={onPick} hidden />
             </label>
             {file && <span className="file-name">{file.name}</span>}
           </div>
 
-          {status === "done" && (
+          <form
+            className="hash-lookup"
+            onSubmit={(e) => {
+              e.preventDefault();
+              onLookup(hashInput);
+            }}
+          >
+            <label htmlFor="hash-input">
+              <Hash size={14} /> Or look up a hash
+            </label>
+            <div className="hash-row">
+              <input
+                id="hash-input"
+                placeholder="0x…"
+                value={hashInput}
+                onChange={(e) => setHashInput(e.target.value)}
+                spellCheck={false}
+              />
+              <button type="submit" className="btn">
+                Check
+              </button>
+            </div>
+            <button
+              type="button"
+              className="link-btn"
+              onClick={() => {
+                setHashInput(EXAMPLE_HASH);
+                onLookup(EXAMPLE_HASH);
+              }}
+            >
+              Try a clip hash registered at HackTX 2025
+            </button>
+          </form>
+
+          {phase === "done" && (
             <button className="btn-reset" onClick={reset}>
-              <RefreshCw /> Validate Another Video
+              <RefreshCw /> Verify another
             </button>
           )}
         </motion.div>
 
-        <motion.div
-          className="card result"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          {status === "idle" && <p className="muted">No file selected.</p>}
-          
+        <motion.div className="card result" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          {phase === "idle" && !error && <p className="muted">No file selected.</p>}
+
+          {(phase === "hashing" || phase === "checking") && (
+            <div className="verdict-section">
+              <div className="verdict-badge">
+                <Clock className="v-icon" />
+                <span>{phase === "hashing" ? "Hashing in your browser…" : "Reading the contract…"}</span>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="error-box">
               <XCircle className="error-icon" />
@@ -233,50 +261,119 @@ export const Validate: React.FC = () => {
             </div>
           )}
 
-          {status !== "idle" && !error && (
-            <>
-              <div className="verdict-section">
-                <div className={`verdict-badge ${statusClass}`}>
-                  <StatusIcon className="v-icon" />
-                  {status === "done" ? (
-                    <span>
-                      {verdict === "validated" && "Validated"}
-                      {verdict === "not_validated" && "Not Validated"}
-                      {verdict === "partially_validated" && "Partially Validated"}
-                    </span>
-                  ) : (
-                    <span>Processing...</span>
-                  )}
-                </div>
-
-                {status === "done" && message && (
-                  <p className="verdict-message">{message}</p>
-                )}
+          {verdict && (
+            <div className="verdict-section">
+              <div className={`verdict-badge ${verdict === "registered" ? "validated" : "not_validated"}`}>
+                {verdict === "registered" ? <ShieldCheck className="v-icon" /> : <XCircle className="v-icon" />}
+                <span>{verdict === "registered" ? "Registered on chain" : "Not found"}</span>
               </div>
+              <p className="verdict-message">
+                {verdict === "registered"
+                  ? "This exact file was registered on Ethereum Sepolia. Not a single byte has changed since."
+                  : "No record of this exact file. It was never registered, or it was edited after registration: changing even one byte gives a different hash."}
+              </p>
 
-              {status === "done" && chunkDetails.length > 0 && (
-                <div className="chunk-summary">
-                  <h4>Chunk Analysis</h4>
-                  <div className="chunk-details">
-                    {chunkDetails.map((chunk, idx) => (
-                      <div key={idx} className={`chunk-item ${chunk.status}`}>
-                        <span className="chunk-label">Chunk {chunk.chunk_index + 1}</span>
-                        <span className={`chunk-status ${chunk.status}`}>
-                          {chunk.status === "validated" ? (
-                            <ShieldCheck className="chunk-icon" />
-                          ) : (
-                            <XCircle className="chunk-icon" />
-                          )}
-                          {chunk.status}
-                        </span>
-                        <code className="chunk-hash">{chunk.hash.slice(0, 10)}...</code>
-                      </div>
-                    ))}
-                  </div>
+              <dl className="facts">
+                <dt>SHA-256</dt>
+                <dd>
+                  <code>{hash}</code>
+                </dd>
+                {status?.owner && (
+                  <>
+                    <dt>Registered by</dt>
+                    <dd>
+                      <a href={`${ETHERSCAN}/address/${status.owner}`} target="_blank" rel="noreferrer">
+                        <code>{short(status.owner)}</code> <ExternalLink size={12} />
+                      </a>
+                    </dd>
+                    <dt>Registered at</dt>
+                    <dd>
+                      {registration
+                        ? registration.timestamp.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "medium" })
+                        : scan !== null
+                        ? `Searching contract events… ${Math.round(scan * 100)}%`
+                        : "Event not found"}
+                    </dd>
+                    {registration && (
+                      <>
+                        <dt>Block</dt>
+                        <dd>
+                          <a href={`${ETHERSCAN}/block/${registration.blockNumber}`} target="_blank" rel="noreferrer">
+                            {registration.blockNumber.toLocaleString()} <ExternalLink size={12} />
+                          </a>
+                        </dd>
+                        <dt>Transaction</dt>
+                        <dd>
+                          <a href={`${ETHERSCAN}/tx/${registration.txHash}`} target="_blank" rel="noreferrer">
+                            <code>{short(registration.txHash)}</code> <ExternalLink size={12} />
+                          </a>
+                        </dd>
+                      </>
+                    )}
+                  </>
+                )}
+              </dl>
+
+              {verdict === "missing" && file && (
+                <div className="register-box">
+                  <h4>
+                    <Wallet size={16} /> Register this video
+                  </h4>
+                  <p className="muted small">
+                    Anchor this file's hash on Sepolia from your own wallet. You sign and pay test ETH
+                    yourself; this site has no keys and no server.
+                  </p>
+                  {!hasWallet() ? (
+                    <p className="muted small">
+                      No browser wallet detected.{" "}
+                      <a href="https://metamask.io/download/" target="_blank" rel="noreferrer">
+                        Install MetaMask
+                      </a>{" "}
+                      and get free Sepolia ETH from a faucet to register.
+                    </p>
+                  ) : !account ? (
+                    <button className="btn" onClick={onConnect} disabled={regPhase === "connecting"}>
+                      {regPhase === "connecting" ? "Connecting…" : "Connect wallet"}
+                    </button>
+                  ) : (
+                    <>
+                      <p className="muted small">
+                        Connected: <code>{short(account)}</code> on Sepolia
+                      </p>
+                      <button
+                        className="btn"
+                        onClick={onRegister}
+                        disabled={regPhase === "signing" || regPhase === "mining"}
+                      >
+                        {regPhase === "signing"
+                          ? "Confirm in your wallet…"
+                          : regPhase === "mining"
+                          ? "Waiting for the block…"
+                          : "Register hash"}
+                      </button>
+                    </>
+                  )}
+                  {pendingTx && (
+                    <p className="muted small">
+                      Transaction:{" "}
+                      <a href={`${ETHERSCAN}/tx/${pendingTx}`} target="_blank" rel="noreferrer">
+                        {short(pendingTx)}
+                      </a>
+                    </p>
+                  )}
+                  {regError && <p className="reg-error">{regError}</p>}
                 </div>
               )}
-            </>
+            </div>
           )}
+
+          <p className="contract-note">
+            Contract{" "}
+            <a href={`${ETHERSCAN}/address/${CONTRACT_ADDRESS}`} target="_blank" rel="noreferrer">
+              {short(CONTRACT_ADDRESS)}
+            </a>{" "}
+            on Sepolia, read through a public RPC.
+          </p>
         </motion.div>
       </div>
     </div>
@@ -284,4 +381,3 @@ export const Validate: React.FC = () => {
 };
 
 export default Validate;
-

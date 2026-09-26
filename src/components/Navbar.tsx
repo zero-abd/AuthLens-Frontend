@@ -2,6 +2,7 @@ import React from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Camera, ShieldCheck, BookText, House, Sun, Moon, Download } from "lucide-react";
 import "./Navbar.css";
+import { HAS_BACKEND } from "../config";
 
 export const Navbar: React.FC = () => {
   const toggleTheme = () => {
@@ -31,29 +32,33 @@ export const Navbar: React.FC = () => {
             <House className="link-icon" /> Home
           </NavLink>
           <NavLink
-            to="/live"
-            className={({ isActive }) => `link ${isActive ? "active" : ""}`}
-          >
-            Live
-          </NavLink>
-          <NavLink
-            to="/download"
-            className={({ isActive }) => `link ${isActive ? "active" : ""}`}
-          >
-            <Download className="link-icon" /> Download
-          </NavLink>
-          <NavLink
             to="/validate"
             className={({ isActive }) => `link ${isActive ? "active" : ""}`}
           >
-            Validate
+            <ShieldCheck className="link-icon" /> Verify
           </NavLink>
-          <NavLink
-            to="/ledger/demo-video"
-            className={({ isActive }) => `link ${isActive ? "active" : ""}`}
-          >
-            <BookText className="link-icon" /> Ledger
-          </NavLink>
+          {HAS_BACKEND && (
+            <>
+              <NavLink
+                to="/live"
+                className={({ isActive }) => `link ${isActive ? "active" : ""}`}
+              >
+                Live
+              </NavLink>
+              <NavLink
+                to="/download"
+                className={({ isActive }) => `link ${isActive ? "active" : ""}`}
+              >
+                <Download className="link-icon" /> Download
+              </NavLink>
+              <NavLink
+                to="/ledger/demo-video"
+                className={({ isActive }) => `link ${isActive ? "active" : ""}`}
+              >
+                <BookText className="link-icon" /> Ledger
+              </NavLink>
+            </>
+          )}
           <button
             className="theme-toggle"
             onClick={toggleTheme}
