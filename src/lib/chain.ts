@@ -29,7 +29,7 @@ const RPC_URLS = [
 
 // publicnode caps eth_getLogs at 50,000 blocks per call.
 const LOG_WINDOW = 50_000;
-const LOG_CONCURRENCY = 6;
+const LOG_CONCURRENCY = 10;
 
 const providers = new Map<string, JsonRpcProvider>();
 const readProvider = (url: string) => {

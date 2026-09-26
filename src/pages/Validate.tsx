@@ -269,8 +269,12 @@ export const Validate: React.FC = () => {
               </div>
               <p className="verdict-message">
                 {verdict === "registered"
-                  ? "This exact file was registered on Ethereum Sepolia. Not a single byte has changed since."
-                  : "No record of this exact file. It was never registered, or it was edited after registration: changing even one byte gives a different hash."}
+                  ? file
+                    ? "This exact file was registered on Ethereum Sepolia. Not a single byte has changed since."
+                    : "This hash was registered on Ethereum Sepolia."
+                  : file
+                  ? "No record of this exact file. It was never registered, or it was edited after registration: changing even one byte gives a different hash."
+                  : "No record of this hash on the contract."}
               </p>
 
               <dl className="facts">
